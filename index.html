@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Medication-Diet Interaction Nutrition Coach</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: #f0f4f8; }
+.gradient-header { background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 50%, #4a90c4 100%); }
+.card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.btn-primary { background: linear-gradient(135deg, #2d6a9f, #4a90c4); color: white; border-radius: 12px; min-height: 48px; font-weight: 600; transition: all 0.2s; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(45,106,159,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary { background: #e8f0fe; color: #1e3a5f; border-radius: 12px; min-height: 48px; font-weight: 600; transition: all 0.2s; }
+.btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; border-radius: 12px; min-height: 44px; font-weight: 600; }
+.btn-warning { background: linear-gradient(135deg, #d97706, #f59e0b); color: white; border-radius: 12px; min-height: 44px; font-weight: 600; }
+.input-field { border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; font-size: 16px; transition: border-color 0.2s; min-height: 48px; }
+.input-field:focus { border-color: #4a90c4; outline: none; box-shadow: 0 0 0 3px rgba(74,144,196,0.15); }
+.tag { display: inline-flex; align-items: center; gap: 6px; background: #e8f0fe; color: #1e3a5f; border-radius: 20px; padding: 8px 14px; font-size: 14px; font-weight: 500; }
+.tag-remove { cursor: pointer; font-size: 18px; line-height: 1; opacity: 0.6; }
+.tag-remove:hover { opacity: 1; }
+.flag-danger { background: #fef2f2; border-left: 4px solid #dc2626; }
+.flag-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+.flag-safe { background: #f0fdf4; border-left: 4px solid #16a34a; }
+.tab-active { border-bottom: 3px solid #2d6a9f; color: #1e3a5f; font-weight: 700; }
+.tab-inactive { border-bottom: 3px solid transparent; color: #94a3b8; font-weight: 500; }
+.spinner { border: 3px solid #e2e8f0; border-top: 3px solid #2d6a9f; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.4s ease-out; }
+.nav-bottom { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; background: #1e3a5f; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 500; animation: fadeIn 0.3s; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.meal-card { border-radius: 14px; overflow: hidden; transition: all 0.2s; }
+.meal-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.lab-bar { height: 8px; border-radius: 4px; transition: width 0.6s ease; }
+.shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+</style>
+</head>
+<body class="min-h-screen pb-24">
+
+<div id="app">
+  <!-- Header -->
+  <header class="gradient-header text-white px-4 pt-6 pb-5 sticky top-0 z-40">
+    <div class="max-w-lg mx-auto">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold flex items-center gap-2">💊🥗 MedDiet Coach</h1>
+          <p class="text-blue-100 text-sm mt-1">Medication-Diet Interaction Safety</p>
+        </div>
+        <button onclick="showSection('settings')" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-lg mx-auto px-4 py-4 space-y-4" id="main-content">
+
+    <!-- Onboarding Card (shown if no profile) -->
+    <div id="onboarding-card" class="card p-5 fade-in" style="display:none;">
+      <div class="text-center">
+        <div class="text-4xl mb-3">👋</div>
+        <h2 class="text-lg font-bold text-gray-800">Welcome to MedDiet Coach!</h2>
+        <p class="text-gray-500 text-sm mt-2 leading-relaxed">Add your medications, conditions, and lab values to get personalized meal plans with safety checks.</p>
+        <button onclick="showSection('profile')" class="btn-primary w-full mt-4 px-6 py-3">Get Started →</button>
+      </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="section-profile" class="space-y-4" style="display:none;">
+      <div class="card p-5 fade-in">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">💊 Medications</h2>
+        <p class="text-gray-400 text-xs mt-1">Add all current medications (e.g., Warfarin, Metformin, Lisinopril)</p>
+        <div class="flex gap-2 mt-3">
+          <input type="text" id="med-input" class="input-field flex-1" placeholder="Type medication name..." onkeydown="if(event.key==='Enter')addMed()">
+          <button onclick="addMed()" class="btn-primary px-5">Add</button>
+        </div>
+        <div id="med-tags" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+
+      <div class="card p-5 fade-in">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">🏥 Diagnoses / Conditions</h2>
+        <p class="text-gray-400 text-xs mt-1">e.g., Heart Failure, Type 2 Diabetes, Atrial Fibrillation, CKD</p>
+        <div class="flex gap-2 mt-3">
+          <input type="text" id="dx-input" class="input-field flex-1" placeholder="Type condition..." onkeydown="if(event.key==='Enter')addDx()">
+          <button onclick="addDx()" class="btn-primary px-5">Add</button>
+        </div>
+        <div id="dx-tags" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+
+      <div class="card p-5 fade-in">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">🔬 Lab Values <span class="text-xs font-normal text-gray-400">(optional)</span></h2>
+        <p class="text-gray-400 text-xs mt-1">Recent labs help personalize recommendations</p>
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <div>
+            <label class="text-xs font-medium text-gray-500">INR</label>
+            <input type="number" step="0.1" id="lab-inr" class="input-field w-full" placeholder="e.g., 2.5">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500">A1C (%)</label>
+            <input type="number" step="0.1" id="lab-a1c" class="input-field w-full" placeholder="e.g., 7.2">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500">Potassium (mEq/L)</label>
+            <input type="number" step="0.1" id="lab-k" class="input-field w-full" placeholder="e.g., 4.5">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500">Creatinine (mg/dL)</label>
+            <input type="number" step="0.1" id="lab-cr" class="input-field w-full" placeholder="e.g., 1.1">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500">Sodium (mEq/L)</label>
+            <input type="number" step="1" id="lab-na" class="input-field w-full" placeholder="e.g., 140">
+          </div>
+          <div>
+            <label class="text-xs font-medium text-gray-500">eGFR (mL/min)</label>
+            <input type="number" step="1" id="lab-egfr" class="input-field w-full" placeholder="e.g., 60">
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 fade-in">
+        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">🍽️ Dietary Preferences</h2>
+        <div class="flex gap-2 mt-3">
+          <input type="text" id="pref-input" class="input-field flex-1" placeholder="e.g., vegetarian, low-sodium..." onkeydown="if(event.key==='Enter')addPref()">
+          <button onclick="addPref()" class="btn-primary px-5">Add</button>
+        </div>
+        <div id="pref-tags" class="flex flex-wrap gap-2 mt-3"></div>
+      </div>
+
+      <button onclick="saveProfile()" class="btn-primary w-full py-4 text-lg">💾 Save Profile & Continue</button>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="section-dashboard" class="space-y-4" style="display:none;">
+      <!-- Quick Summary -->
+      <div class="card p-5 fade-in">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-gray-800">📋 Your Profile</h2>
+          <button onclick="showSection('profile')" class="text-sm text-blue-600 font-medium">Edit ✏️</button>
+        </div>
+        <div id="profile-summary" class="mt-3 space-y-2 text-sm text-gray-600"></div>
+      </div>
+
+      <!-- Main Actions -->
+      <div class="grid grid-cols-1 gap-3">
+        <button onclick="generateMealPlan()" class="btn-primary py-5 text-lg flex items-center justify-center gap-2">
+          🍽️ Generate Safe Meal Plan
+        </button>
+        <button onclick="checkMealSafety()" class="btn-secondary py-4 text-base flex items-center justify-center gap-2">
+          ⚡ Quick Meal Safety Check
+        </button>
+        <button onclick="simulateLabImpact()" class="btn-secondary py-4 text-base flex items-center justify-center gap-2">
+          🔬 Simulate Lab Impact
+        </button>
+      </div>
+    </div>
+
+    <!-- Meal Plan Section -->
+    <div id="section-mealplan" class="space-y-4" style="display:none;">
+      <div class="flex items-center gap-2 mb-2">
+        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow text-lg">←</button>
+        <h2 class="text-lg font-bold text-gray-800">🍽️ Your Safe Meal Plan</h2>
+      </div>
+      <div id="mealplan-loading" class="card p-8 text-center" style="display:none;">
+        <div class="spinner mx-auto mb-4"></div>
+        <p class="text-gray-500 font-medium">Analyzing medication interactions...</p>
+        <p class="text-gray-400 text-sm mt-1">Generating safe, personalized meals</p>
+      </div>
+      <div id="mealplan-content" class="space-y-4"></div>
+    </div>
+
+    <!-- Meal Safety Check Section -->
+    <div id="section-safety" class="space-y-4" style="display:none;">
+      <div class="flex items-center gap-2 mb-2">
+        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow text-lg">←</button>
+        <h2 class="text-lg font-bold text-gray-800">⚡ Meal Safety Check</h2>
+      </div>
+      <div class="card p-5">
+        <p class="text-gray-500 text-sm mb-3">Describe a meal or food you'd like to check against your medications:</p>
+        <textarea id="meal-check-input" class="input-field w-full" rows="3" placeholder="e.g., Spinach salad with grilled chicken, grapefruit juice, and a banana..."></textarea>
+        <button onclick="runSafetyCheck()" class="btn-primary w-full mt-3 py-3">🔍 Check Safety</button>
+      </div>
+      <div id="safety-loading" class="card p-8 text-center" style="display:none;">
+        <div class="spinner mx-auto mb-4"></div>
+        <p class="text-gray-500 font-medium">Analyzing interactions...</p>
+      </div>
+      <div id="safety-content" class="space-y-3"></div>
+    </div>
+
+    <!-- Lab Simulation Section -->
+    <div id="section-labsim" class="space-y-4" style="display:none;">
+      <div class="flex items-center gap-2 mb-2">
+        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow text-lg">←</button>
+        <h2 class="text-lg font-bold text-gray-800">🔬 Lab Impact Simulator</h2>
+      </div>
+      <div class="card p-5">
+        <p class="text-gray-500 text-sm mb-3">Describe a dietary change you're considering:</p>
+        <textarea id="lab-sim-input" class="input-field w-full" rows="3" placeholder="e.g., Switching to a high-potassium diet with more bananas and leafy greens..."></textarea>
+        <button onclick="runLabSimulation()" class="btn-primary w-full mt-3 py-3">📊 Simulate Impact</button>
+      </div>
+      <div id="labsim-loading" class="card p-8 text-center" style="display:none;">
+        <div class="spinner mx-auto mb-4"></div>
+        <p class="text-gray-500 font-medium">Running predictive models...</p>
+      </div>
+      <div id="labsim-content" class="space-y-3"></div>
+    </div>
+
+    <!-- Grocery List Section -->
+    <div id="section-grocery" class="space-y-4" style="display:none;">
+      <div class="flex items-center gap-2 mb-2">
+        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow text-lg">←</button>
+        <h2 class="text-lg font-bold text-gray-800">🛒 Grocery List</h2>
+      </div>
+      <div id="grocery-content" class="space-y-3"></div>
+    </div>
+
+    <!-- Settings Section -->
+    <div id="section-settings" class="space-y-4" style="display:none;">
+      <div class="flex items-center gap-2 mb-2">
+        <button onclick="showSection('dashboard')" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow text-lg">←</button>
+        <h2 class="text-lg font-bold text-gray-800">⚙️ Settings</h2>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-gray-700">Data Management</h3>
+        <button onclick="clearAllData()" class="btn-danger w-full mt-3 py-3">🗑️ Clear All Data</button>
+        <p class="text-xs text-gray-400 mt-2 text-center">This will remove your profile and all saved data</p>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-gray-700">About</h3>
+        <p class="text-sm text-gray-500 mt-2 leading-relaxed">MedDiet Coach cross-references your medications, labs, and diagnoses to produce safe meal plans and real-time dietary safety flags. Always consult your healthcare provider before making dietary changes.</p>
+        <p class="text-xs text-gray-400 mt-3">⚠️ For informational purposes only. Not a substitute for professional medical advice.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="nav-bottom">
+    <div class="max-w-lg mx-auto flex">
+      <button onclick="showSection('dashboard')" id="nav-dashboard" class="flex-1 flex flex-col items-center py-3 tab-active">
+        <span class="text-lg">🏠</span>
+        <span class="text-xs mt-1">Home</span>
+      </button>
+      <button onclick="showSection('mealplan');if(!document.getElementById('mealplan-content').innerHTML)generateMealPlan()" id="nav-mealplan" class="flex-1 flex flex-col items-center py-3 tab-inactive">
+        <span class="text-lg">🍽️</span>
+        <span class="text-xs mt-1">Meals</span>
+      </button>
+      <button onclick="showSection('safety')" id="nav-safety" class="flex-1 flex flex-col items-center py-3 tab-inactive">
+        <span class="text-lg">⚡</span>
+        <span class="text-xs mt-1">Check</span>
+      </button>
+      <button onclick="showSection('grocery')" id="nav-grocery" class="flex-1 flex flex-col items-center py-3 tab-inactive">
+        <span class="text-lg">🛒</span>
+        <span class="text-xs mt-1">Grocery</span>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+(function() {
+  // Global AI tracking
+  window.aiTotalInputTokens = 0;
+  window.aiTotalOutputTokens = 0;
+  window.aiTotalTime = 0;
+  window.aiAliasTimes = {};
+
+  // State
+  let profile = JSON.parse(localStorage.getItem('meddiet_profile')) || {
+    medications: [],
+    diagnoses: [],
+    labs: {},
+    preferences: [],
+  };
+  let lastMealPlan = JSON.parse(localStorage.getItem('meddiet_mealplan')) || null;
+  let lastGrocery = JSON.parse(localStorage.getItem('meddiet_grocery')) || null;
+
+  // Initialize
+  window.addEventListener('DOMContentLoaded', () => {
+    if (profile.medications.length === 0 && profile.diagnoses.length === 0) {
+      document.getElementById('onboarding-card').style.display = 'block';
+    } else {
+      showSection('dashboard');
+    }
+    renderTags();
+    loadLabFields();
+  });
+
+  // Toast notification
+  window.showToast = function(msg, duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(() => toast.remove(), duration);
+  };
+
+  // Section navigation
+  window.showSection = function(section) {
+    const sections = ['profile', 'dashboard', 'mealplan', 'safety', 'labsim', 'grocery', 'settings'];
+    sections.forEach(s => {
+      const el = document.getElementById('section-' + s);
+      if (el) el.style.display = 'none';
+    });
+    document.getElementById('onboarding-card').style.display = 'none';
+
+    const target = document.getElementById('section-' + section);
+    if (target) target.style.display = 'block';
+
+    // Update nav
+    ['dashboard', 'mealplan', 'safety', 'grocery'].forEach(n => {
+      const nav = document.getElementById('nav-' + n);
+      if (nav) {
+        nav.className = nav.className.replace('tab-active', 'tab-inactive');
+        if (n === section || (section === 'labsim' && n === 'dashboard')) {
+          nav.className = nav.className.replace('tab-inactive', 'tab-active');
+        }
+      }
+    });
+
+    if (section === 'dashboard') {
+      renderProfileSummary();
+      document.getElementById('nav-dashboard').className = document.getElementById('nav-dashboard').className.replace('tab-inactive', 'tab-active');
+    }
+
+    if (section === 'grocery' && lastGrocery) {
+      renderGroceryList(lastGrocery);
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Tag management
+  window.addMed = function() {
+    const input = document.getElementById('med-input');
+    const val = input.value.trim();
+    if (val && !profile.medications.includes(val)) {
+      profile.medications.push(val);
+      input.value = '';
+      renderTags();
+    }
+  };
+
+  window.addDx = function() {
+    const input = document.getElementById('dx-input');
+    const val = input.value.trim();
+    if (val && !profile.diagnoses.includes(val)) {
+      profile.diagnoses.push(val);
+      input.value = '';
+      renderTags();
+    }
+  };
+
+  window.addPref = function() {
+    const input = document.getElementById('pref-input');
+    const val = input.value.trim();
+    if (val && !profile.preferences.includes(val)) {
+      profile.preferences.push(val);
+      input.value = '';
+      renderTags();
+    }
+  };
+
+  window.removeMed = function(i) { profile.medications.splice(i, 1); renderTags(); };
+  window.removeDx = function(i) { profile.diagnoses.splice(i, 1); renderTags(); };
+  window.removePref = function(i) { profile.preferences.splice(i, 1); renderTags(); };
+
+  function renderTags() {
+    document.getElementById('med-tags').innerHTML = profile.medications.map((m, i) =>
+      `<span class="tag">💊 ${m} <span class="tag-remove" onclick="removeMed(${i})">×</span></span>`
+    ).join('');
+    document.getElementById('dx-tags').innerHTML = profile.diagnoses.map((d, i) =>
+      `<span class="tag">🏥 ${d} <span class="tag-remove" onclick="removeDx(${i})">×</span></span>`
+    ).join('');
+    document.getElementById('pref-tags').innerHTML = profile.preferences.map((p, i) =>
+      `<span class="tag">🥗 ${p} <span class="tag-remove" onclick="removePref(${i})">×</span></span>`
+    ).join('');
+  }
+
+  function loadLabFields() {
+    if (profile.labs.inr) document.getElementById('lab-inr').value = profile.labs.inr;
+    if (profile.labs.a1c) document.getElementById('lab-a1c').value = profile.labs.a1c;
+    if (profile.labs.potassium) document.getElementById('lab-k').value = profile.labs.potassium;
+    if (profile.labs.creatinine) document.getElementById('lab-cr').value = profile.labs.creatinine;
+    if (profile.labs.sodium) document.getElementById('lab-na').value = profile.labs.sodium;
+    if (profile.labs.egfr) document.getElementById('lab-egfr').value = profile.labs.egfr;
+  }
+
+  // Save profile
+  window.saveProfile = function() {
+    profile.labs = {
+      inr: parseFloat(document.getElementById('lab-inr').value) || null,
+      a1c: parseFloat(document.getElementById('lab-a1c').value) || null,
+      potassium: parseFloat(document.getElementById('lab-k').value) || null,
+      creatinine: parseFloat(document.getElementById('lab-cr').value) || null,
+      sodium: parseFloat(document.getElementById('lab-na').value) || null,
+      egfr: parseFloat(document.getElementById('lab-egfr').value) || null,
+    };
+    localStorage.setItem('meddiet_profile', JSON.stringify(profile));
+    showToast('✅ Profile saved!');
+    showSection('dashboard');
+  };
+
+  function renderProfileSummary() {
+    const el = document.getElementById('profile-summary');
+    let html = '';
+    if (profile.medications.length) {
+      html += `<div>💊 <strong>Medications:</strong> ${profile.medications.join(', ')}</div>`;
+    }
+    if (profile.diagnoses.length) {
+      html += `<div>🏥 <strong>Conditions:</strong> ${profile.diagnoses.join(', ')}</div>`;
+    }
+    const labs = Object.entries(profile.labs).filter(([k, v]) => v !== null);
+    if (labs.length) {
+      html += `<div>🔬 <strong>Labs:</strong> ${labs.map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(', ')}</div>`;
+    }
+    if (profile.preferences.length) {
+      html += `<div>🥗 <strong>Preferences:</strong> ${profile.preferences.join(', ')}</div>`;
+    }
+    if (!html) html = '<p class="text-gray-400">No profile data yet. Tap Edit to add your info.</p>';
+    el.innerHTML = html;
+  }
+
+  // AI call with retry
+  async function callAI(alias, params, retries = 3) {
+    const startTime = Date.now();
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const resp = await fetch('https://16504442930.work/run_prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alias, params })
+        });
+        if (!resp.ok) {
+          const errorText = await resp.text();
+          if (attempt === retries - 1) {
+            const elapsed = Date.now() - startTime;
+            window.aiTotalTime += elapsed;
+            window.aiAliasTimes[alias] = (window.aiAliasTimes[alias] || 0) + elapsed;
+            // Try to get user-friendly error
+            try {
+              const friendlyResp = await fetch('https://16504442930.work/run_prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  alias: 'genericAI',
+                  params: { prompt: `Reformat this API error into a friendly, empowering message for the user. Include what they can try to fix it. Error: ${errorText}. Return JSON with key "friendlyMessage" as a string.` }
+                })
+              });
+              const friendlyData = await friendlyResp.json();
+              throw new Error(friendlyData.friendlyMessage || errorText);
+            } catch (e2) {
+              throw new Error(`Something went wrong. Please try again in a moment. (Details: ${errorText})`);
+            }
+          }
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        const data = await resp.json();
+        const elapsed = Date.now() - startTime;
+        window.aiTotalTime += elapsed;
+        window.aiAliasTimes[alias] = (window.aiAliasTimes[alias] || 0) + elapsed;
+        if (data.input_tokens) window.aiTotalInputTokens += data.input_tokens;
+        if (data.output_tokens) window.aiTotalOutputTokens += data.output_tokens;
+        return data;
+      } catch (err) {
+        if (attempt === retries - 1) {
+          const elapsed = Date.now() - startTime;
+          window.aiTotalTime += elapsed;
+          window.aiAliasTimes[alias] = (window.aiAliasTimes[alias] || 0) + elapsed;
+          throw err;
+        }
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  function getProfileContext() {
+    return `Patient Profile:
+- Medications: ${profile.medications.join(', ') || 'None listed'}
+- Diagnoses/Conditions: ${profile.diagnoses.join(', ') || 'None listed'}
+- Lab Values: ${Object.entries(profile.labs).filter(([k, v]) => v !== null).map(([k, v]) => `${k}: ${v}`).join(', ') || 'None provided'}
+- Dietary Preferences: ${profile.preferences.join(', ') || 'None'}`;
+  }
+
+  // Generate Meal Plan
+  window.generateMealPlan = async function() {
+    if (profile.medications.length === 0 && profile.diagnoses.length === 0) {
+      showToast('⚠️ Please add medications or conditions first');
+      showSection('profile');
+      return;
+    }
+
+    showSection('mealplan');
+    document.getElementById('mealplan-loading').style.display = 'block';
+    document.getElementById('mealplan-content').innerHTML = '';
+
+    try {
+      const prompt = `You are a clinical nutrition expert specializing in medication-diet interactions for elderly patients on polypharmacy.
+
+${getProfileContext()}
+
+Generate a FULL DAY meal plan (breakfast, lunch, dinner, 2 snacks) that is SAFE given the patient's medication list, conditions, and lab values. For each meal:
+1. Flag any potential medication-diet interactions
+2. Explain WHY each food is safe or beneficial
+3. Provide alternatives if there are borderline concerns
+
+Also generate a grocery list for the week based on 7 days of similar meals.
+
+Return JSON with EXACTLY this structure:
+{
+  "interactions_summary": string (brief overview of key medication-diet interactions to watch for this patient, 2-3 sentences),
+  "safety_alerts": [{"level": string ("danger" | "warning" | "info"), "message": string}],
+  "meals": [
+    {
+      "meal_type": string ("Breakfast" | "Morning Snack" | "Lunch" | "Afternoon Snack" | "Dinner"),
+      "name": string (creative meal name),
+      "description": string (brief description of the meal),
+      "ingredients": [string],
+      "interaction_flags": [{"food": string, "medication": string, "risk_level": string ("safe" | "caution" | "avoid"), "explanation": string, "alternative": string}],
+      "nutrition_note": string (why this meal is appropriate for the patient's conditions),
+      "calories_estimate": number
+    }
+  ],
+  "grocery_list": {
+    "produce": [string],
+    "proteins": [string],
+    "dairy_alternatives": [string],
+    "grains_starches": [string],
+    "pantry": [string],
+    "frozen": [string]
+  },
+  "general_tips": [string (3-5 practical tips specific to this patient's medication-diet needs)]
+}
+
+All values must be populated. Be clinically accurate. Prioritize safety.`;
+
+      const data = await callAI('genericAI', { prompt });
+
+      lastMealPlan = data;
+      localStorage.setItem('meddiet_mealplan', JSON.stringify(data));
+      lastGrocery = data.grocery_list;
+      localStorage.setItem('meddiet_grocery', JSON.stringify(data.grocery_list));
+
+      renderMealPlan(data);
+    } catch (err) {
+      document.getElementById('mealplan-content').innerHTML = `<div class="card p-5 flag-danger"><p class="font-semibold text-red-800">❌ Error</p><p class="text-sm text-red-600 mt-1">${err.message}</p></div>`;
+    }
+    document.getElementById('mealplan-loading').style.display = 'none';
+  };
+
+  function renderMealPlan(data) {
+    let html = '';
+
+    // Interactions summary
+    if (data.interactions_summary) {
+      html += `<div class="card p-4 bg-blue-50 border-l-4 border-blue-500 fade-in">
+        <p class="font-semibold text-blue-800 text-sm">🔗 Key Interactions</p>
+        <p class="text-sm text-blue-700 mt-1">${data.interactions_summary}</p>
+      </div>`;
+    }
+
+    // Safety alerts
+    if (data.safety_alerts && data.safety_alerts.length) {
+      data.safety_alerts.forEach(a => {
+        const cls = a.level === 'danger' ? 'flag-danger' : a.level === 'warning' ? 'flag-warning' : 'flag-safe';
+        const icon = a.level === 'danger' ? '🚨' : a.level === 'warning' ? '⚠️' : 'ℹ️';
+        html += `<div class="card p-4 ${cls} fade-in"><p class="text-sm font-medium">${icon} ${a.message}</p></div>`;
+      });
+    }
+
+    // Meals
+    if (data.meals && data.meals.length) {
+      data.meals.forEach(meal => {
+        const mealIcons = { 'Breakfast': '🌅', 'Morning Snack': '🍎', 'Lunch': '☀️', 'Afternoon Snack': '🫐', 'Dinner': '🌙' };
+        const icon = mealIcons[meal.meal_type] || '🍽️';
+
+        html += `<div class="card meal-card fade-in overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-gray-800">${icon} ${meal.meal_type}</h3>
+              <span class="text-xs bg-white px-2 py-1 rounded-full text-gray-500">${meal.calories_estimate || '~'} cal</span>
+            </div>
+            <p class="font-semibold text-blue-800 mt-1">${meal.name}</p>
+          </div>
+          <div class="p-4 space-y-3">
+            <p class="text-sm text-gray-600">${meal.description}</p>
+            <div>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ingredients</p>
+              <div class="flex flex-wrap gap-1 mt-1">
+                ${(meal.ingredients || []).map(i => `<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">${i}</span>`).join('')}
+              </div>
+            </div>`;
+
+        if (meal.interaction_flags && meal.interaction_flags.length) {
+          meal.interaction_flags.forEach(f => {
+            const fc = f.risk_level === 'avoid' ? 'flag-danger' : f.risk_level === 'caution' ? 'flag-warning' : 'flag-safe';
+            const fi = f.risk_level === 'avoid' ? '🚫' : f.risk_level === 'caution' ? '⚠️' : '✅';
+            html += `<div class="p-3 rounded-lg ${fc} text-sm">
+              <p class="font-medium">${fi} ${f.food} + ${f.medication}</p>
+              <p class="text-xs mt-1 opacity-80">${f.explanation}</p>
+              ${f.alternative ? `<p class="text-xs mt-1 font-medium">💡 Alternative: ${f.alternative}</p>` : ''}
+            </div>`;
+          });
+        }
+
+        if (meal.nutrition_note) {
+          html += `<p class="text-xs text-green-700 bg-green-50 p-2 rounded-lg">✨ ${meal.nutrition_note}</p>`;
+        }
+
+        html += `</div></div>`;
+      });
+    }
+
+    // Tips
+    if (data.general_tips && data.general_tips.length) {
+      html += `<div class="card p-5 fade-in">
+        <h3 class="font-bold text-gray-800 mb-3">💡 Tips for You</h3>
+        <ul class="space-y-2">
+          ${data.general_tips.map(t => `<li class="text-sm text-gray-600 flex gap-2"><span class="text-green-500">•</span>${t}</li>`).join('')}
+        </ul>
+      </div>`;
+    }
+
+    // Grocery button
+    html += `<button onclick="showSection('grocery')" class="btn-secondary w-full py-4 flex items-center justify-center gap-2">🛒 View Grocery List</button>`;
+
+    document.getElementById('mealplan-content').innerHTML = html;
+  }
+
+  function renderGroceryList(grocery) {
+    if (!grocery) {
+      document.getElementById('grocery-content').innerHTML = '<div class="card p-5 text-center"><p class="text-gray-400">Generate a meal plan first to see your grocery list 🛒</p></div>';
+      return;
+    }
+
+    const categories = [
+      { key: 'produce', label: '🥬 Produce', color: 'green' },
+      { key: 'proteins', label: '🥩 Proteins', color: 'red' },
+      { key: 'dairy_alternatives', label: '🥛 Dairy & Alternatives', color: 'blue' },
+      { key: 'grains_starches', label: '🌾 Grains & Starches', color: 'amber' },
+      { key: 'pantry', label: '🏪 Pantry Items', color: 'purple' },
+      { key: 'frozen', label: '❄️ Frozen', color: 'cyan' },
+    ];
+
+    let html = '';
+    categories.forEach(cat => {
+      const items = grocery[cat.key];
+      if (items && items.length) {
+        html += `<div class="card p-4 fade-in">
+          <h3 class="font-bold text-gray-800 mb-2">${cat.label}</h3>
+          <div class="space-y-1">
+            ${items.map((item, idx) => `
+              <label class="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 cursor-pointer" id="grocery-item-${cat.key}-${idx}">
+                <input type="checkbox" class="w-5 h-5 rounded accent-blue-500" onchange="toggleGroceryItem(this)">
+                <span class="text-sm text-gray-700">${item}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>`;
+      }
+    });
+
+    if (!html) html = '<div class="card p-5 text-center"><p class="text-gray-400">Generate a meal plan first to see your grocery list 🛒</p></div>';
+    document.getElementById('grocery-content').innerHTML = html;
+  }
+
+  window.toggleGroceryItem = function(checkbox) {
+    const label = checkbox.closest('label');
+    const span = label.querySelector('span');
+    if (checkbox.checked) {
+      span.style.textDecoration = 'line-through';
+      span.style.opacity = '0.5';
+    } else {
+      span.style.textDecoration = 'none';
+      span.style.opacity = '1';
+    }
+  };
+
+  // Quick Meal Safety Check
+  window.checkMealSafety = function() {
+    showSection('safety');
+  };
+
+  window.runSafetyCheck = async function() {
+    const mealDesc = document.getElementById('meal-check-input').value.trim();
+    if (!mealDesc) {
+      showToast('⚠️ Please describe a meal to check');
+      return;
+    }
+    if (profile.medications.length === 0) {
+      showToast('⚠️ Please add medications first');
+      return;
+    }
+
+    document.getElementById('safety-loading').style.display = 'block';
+    document.getElementById('safety-content').innerHTML = '';
+
+    try {
+      const prompt = `You are a clinical pharmacist and nutrition expert. Analyze this meal for medication-diet interactions.
+
+${getProfileContext()}
+
+MEAL TO CHECK: "${mealDesc}"
+
+Analyze EVERY ingredient/food mentioned for interactions with EACH medication. Be thorough and clinically accurate.
+
+Return JSON with EXACTLY this structure:
+{
+  "overall_safety": string ("safe" | "caution" | "danger"),
+  "overall_message": string (1-2 sentence summary),
+  "flags": [
+    {
+      "food_item": string,
+      "medication": string,
+      "risk_level": string ("safe" | "caution" | "danger"),
+      "interaction_type": string (e.g., "absorption interference", "potentiation", "vitamin K interaction", etc.),
+      "explanation": string (clear clinical explanation),
+      "recommendation": string (what to do about it),
+      "safe_alternative": string (a safe replacement food)
+    }
+  ],
+  "safe_foods_in_meal": [string (foods that are safe to eat)],
+  "modified_meal_suggestion": string (rewritten version of the meal that is fully safe)
+}`;
+
+      const data = await callAI('genericAI', { prompt });
+      renderSafetyCheck(data);
+    } catch (err) {
+      document.getElementById('safety-content').innerHTML = `<div class="card p-5 flag-danger"><p class="font-semibold text-red-800">❌ Error</p><p class="text-sm text-red-600 mt-1">${err.message}</p></div>`;
+    }
+    document.getElementById('safety-loading').style.display = 'none';
+  };
+
+  function renderSafetyCheck(data) {
+    let html = '';
+
+    // Overall safety badge
+    const safetyColors = { safe: 'bg-green-100 text-green-800 border-green-300', caution: 'bg-yellow-100 text-yellow-800 border-yellow-300', danger: 'bg-red-100 text-red-800 border-red-300' };
+    const safetyIcons = { safe: '✅', caution: '⚠️', danger: '🚨' };
+    const sc = safetyColors[data.overall_safety] || safetyColors.caution;
+    const si = safetyIcons[data.overall_safety] || '⚠️';
+
+    html += `<div class="card p-5 border-2 ${sc} fade-in text-center">
+      <p class="text-3xl mb-2">${si}</p>
+      <p class="text-lg font-bold">${(data.overall_safety || 'Unknown').toUpperCase()}</p>
+      <p class="text-sm mt-2">${data.overall_message || ''}</p>
+    </div>`;
+
+    // Interaction flags
+    if (data.flags && data.flags.length) {
+      data.flags.forEach(f => {
+        const fc = f.risk_level === 'danger' ? 'flag-danger' : f.risk_level === 'caution' ? 'flag-warning' : 'flag-safe';
+        const fi = f.risk_level === 'danger' ? '🚫' : f.risk_level === 'caution' ? '⚠️' : '✅';
+        html += `<div class="card p-4 ${fc} fade-in">
+          <p class="font-bold text-sm">${fi} ${f.food_item} + ${f.medication}</p>
+          <p class="text-xs text-gray-500 mt-1 italic">${f.interaction_type || ''}</p>
+          <p class="text-sm mt-2">${f.explanation}</p>
+          <p class="text-sm mt-2 font-medium">📋 ${f.recommendation}</p>
+          ${f.safe_alternative ? `<p class="text-sm mt-1 text-green-700">💡 Try instead: ${f.safe_alternative}</p>` : ''}
+        </div>`;
+      });
+    }
+
+    // Safe foods
+    if (data.safe_foods_in_meal && data.safe_foods_in_meal.length) {
+      html += `<div class="card p-4 flag-safe fade-in">
+        <p class="font-semibold text-sm text-green-800">✅ Safe foods in this meal:</p>
+        <p class="text-sm text-green-700 mt-1">${data.safe_foods_in_meal.join(', ')}</p>
+      </div>`;
+    }
+
+    // Modified suggestion
+    if (data.modified_meal_suggestion) {
+      html += `<div class="card p-5 bg-blue-50 fade-in">
+        <p class="font-bold text-blue-800 text-sm">🍽️ Safer Version of Your Meal</p>
+        <p class="text-sm text-blue-700 mt-2">${data.modified_meal_suggestion}</p>
+      </div>`;
+    }
+
+    document.getElementById('safety-content').innerHTML = html;
+  }
+
+  // Lab Impact Simulation
+  window.simulateLabImpact = function() {
+    showSection('labsim');
+  };
+
+  window.runLabSimulation = async function() {
+    const dietChange = document.getElementById('lab-sim-input').value.trim();
+    if (!dietChange) {
+      showToast('⚠️ Please describe a dietary change');
+      return;
+    }
+    if (profile.medications.length === 0) {
+      showToast('⚠️ Please add medications first');
+      return;
+    }
+
+    document.getElementById('labsim-loading').style.display = 'block';
+    document.getElementById('labsim-content').innerHTML = '';
+
+    try {
+      const prompt = `You are a clinical pharmacologist and nutrition scientist. Simulate the likely impact of a dietary change on lab values for this patient.
+
+${getProfileContext()}
+
+PROPOSED DIETARY CHANGE: "${dietChange}"
+
+Based on known pharmacokinetics, pharmacodynamics, and nutritional science, predict how this dietary change would likely affect the patient's lab values over 2-4 weeks. Consider medication interactions, absorption changes, and metabolic effects.
+
+Return JSON with EXACTLY this structure:
+{
+  "summary": string (2-3 sentence overall assessment of the dietary change impact),
+  "risk_level": string ("low" | "moderate" | "high"),
+  "lab_predictions": [
+    {
+      "lab_name": string (e.g., "INR", "Potassium", "A1C", "Creatinine", "Sodium", "Blood Glucose"),
+      "current_value": number or null (from provided labs, null if not provided),
+      "predicted_value": number (expected value after dietary change),
+      "normal_range_low": number,
+      "normal_range_high": number,
+      "unit": string,
+      "direction": string ("increase" | "decrease" | "stable"),
+      "magnitude": string ("minimal" | "moderate" | "significant"),
+      "explanation": string (why this change is expected),
+      "clinical_significance": string ("benign" | "monitor" | "concerning" | "dangerous")
+    }
+  ],
+  "recommendations": [string (3-5 specific clinical recommendations)],
+  "monitoring_plan": string (when and what labs to recheck),
+  "safer_alternative": string (a dietary modification that achieves similar goals more safely)
+}`;
+
+      const data = await callAI('genericAI', { prompt });
+      renderLabSimulation(data);
+    } catch (err) {
+      document.getElementById('labsim-content').innerHTML = `<div class="card p-5 flag-danger"><p class="font-semibold text-red-800">❌ Error</p><p class="text-sm text-red-600 mt-1">${err.message}</p></div>`;
+    }
+    document.getElementById('labsim-loading').style.display = 'none';
+  };
+
+  function renderLabSimulation(data) {
+    let html = '';
+
+    // Risk level
+    const riskColors = { low: 'bg-green-100 text-green-800 border-green-300', moderate: 'bg-yellow-100 text-yellow-800 border-yellow-300', high: 'bg-red-100 text-red-800 border-red-300' };
+    const riskIcons = { low: '✅', moderate: '⚠️', high: '🚨' };
+    const rc = riskColors[data.risk_level] || riskColors.moderate;
+    const ri = riskIcons[data.risk_level] || '⚠️';
+
+    html += `<div class="card p-5 border-2 ${rc} fade-in">
+      <p class="text-2xl text-center mb-2">${ri}</p>
+      <p class="text-center font-bold text-lg">${(data.risk_level || 'Unknown').toUpperCase()} Risk</p>
+      <p class="text-sm mt-2 text-center">${data.summary || ''}</p>
+    </div>`;
+
+    // Lab predictions
+    if (data.lab_predictions && data.lab_predictions.length) {
+      html += `<div class="card p-5 fade-in">
+        <h3 class="font-bold text-gray-800 mb-4">📊 Predicted Lab Changes</h3>
+        <div class="space-y-4">`;
+
+      data.lab_predictions.forEach(lab => {
+        const sigColors = { benign: 'text-green-600', monitor: 'text-yellow-600', concerning: 'text-orange-600', dangerous: 'text-red-600' };
+        const sigColor = sigColors[lab.clinical_significance] || 'text-gray-600';
+        const arrows = { increase: '↑', decrease: '↓', stable: '→' };
+        const arrow = arrows[lab.direction] || '→';
+        const arrowColor = lab.direction === 'increase' ? 'text-red-500' : lab.direction === 'decrease' ? 'text-blue-500' : 'text-gray-400';
+
+        // Calculate bar positions
+        const rangeSpan = lab.normal_range_high - lab.normal_range_low;
+        const rangePadding = rangeSpan * 0.5;
+        const displayMin = lab.normal_range_low - rangePadding;
+        const displayMax = lab.normal_range_high + rangePadding;
+        const displaySpan = displayMax - displayMin;
+
+        const normalStart = ((lab.normal_range_low - displayMin) / displaySpan) * 100;
+        const normalWidth = (rangeSpan / displaySpan) * 100;
+
+        let predictedPos = 50;
+        if (lab.predicted_value !== null && lab.predicted_value !== undefined) {
+          predictedPos = Math.max(2, Math.min(98, ((lab.predicted_value - displayMin) / displaySpan) * 100));
+        }
+        let currentPos = null;
+        if (lab.current_value !== null && lab.current_value !== undefined) {
+          currentPos = Math.max(2, Math.min(98, ((lab.current_value - displayMin) / displaySpan) * 100));
+        }
+
+        html += `<div class="border rounded-xl p-3 border-gray-100">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-gray-800 text-sm">${lab.lab_name}</span>
+            <span class="text-lg font-bold ${arrowColor}">${arrow} ${lab.magnitude || ''}</span>
+          </div>
+          <div class="relative h-8 bg-gray-100 rounded-full overflow-hidden mb-2">
+            <div class="absolute h-full bg-green-100 rounded-full" style="left:${normalStart}%;width:${normalWidth}%"></div>
+            ${currentPos !== null ? `<div class="absolute top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow" style="left:calc(${currentPos}% - 6px);top:50%;transform:translateY(-50%)" title="Current: ${lab.current_value}"></div>` : ''}
+            <div class="absolute w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow" style="left:calc(${predictedPos}% - 6px);top:50%;transform:translateY(-50%)" title="Predicted: ${lab.predicted_value}"></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400 mb-2">
+            <span>${lab.normal_range_low} ${lab.unit}</span>
+            <span class="text-green-600 font-medium">Normal Range</span>
+            <span>${lab.normal_range_high} ${lab.unit}</span>
+          </div>
+          <div class="flex gap-4 text-xs mb-2">
+            ${lab.current_value !== null ? `<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Current: ${lab.current_value}</span>` : ''}
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>Predicted: ${lab.predicted_value}</span>
+          </div>
+          <p class="text-xs text-gray-500">${lab.explanation}</p>
+          <p class="text-xs font-medium ${sigColor} mt-1">Clinical significance: ${lab.clinical_significance}</p>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    }
+
+    // Recommendations
+    if (data.recommendations && data.recommendations.length) {
+      html += `<div class="card p-5 fade-in">
+        <h3 class="font-bold text-gray-800 mb-3">📋 Recommendations</h3>
+        <ul class="space-y-2">
+          ${data.recommendations.map(r => `<li class="text-sm text-gray-600 flex gap-2"><span class="text-blue-500 font-bold">•</span>${r}</li>`).join('')}
+        </ul>
+      </div>`;
+    }
+
+    // Monitoring plan
+    if (data.monitoring_plan) {
+      html += `<div class="card p-4 bg-purple-50 border-l-4 border-purple-400 fade-in">
+        <p class="font-semibold text-purple-800 text-sm">🔬 Monitoring Plan</p>
+        <p class="text-sm text-purple-700 mt-1">${data.monitoring_plan}</p>
+      </div>`;
+    }
+
+    // Safer alternative
+    if (data.safer_alternative) {
+      html += `<div class="card p-4 bg-green-50 border-l-4 border-green-400 fade-in">
+        <p class="font-semibold text-green-800 text-sm">💡 Safer Alternative</p>
+        <p class="text-sm text-green-700 mt-1">${data.safer_alternative}</p>
+      </div>`;
+    }
+
+    document.getElementById('labsim-content').innerHTML = html;
+  }
+
+  // Clear all data
+  window.clearAllData = function() {
+    if (confirm('Are you sure you want to clear all your data? This cannot be undone.')) {
+      localStorage.removeItem('meddiet_profile');
+      localStorage.removeItem('meddiet_mealplan');
+      localStorage.removeItem('meddiet_grocery');
+      profile = { medications: [], diagnoses: [], labs: {}, preferences: [] };
+      lastMealPlan = null;
+      lastGrocery = null;
+      showToast('🗑️ All data cleared');
+      setTimeout(() => location.reload(), 500);
+    }
+  };
+})();
+</script>
+</body>
+</html>
